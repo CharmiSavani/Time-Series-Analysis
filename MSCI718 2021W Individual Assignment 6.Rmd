@@ -304,22 +304,4 @@ cooks.distance(bank.model2, parameters=0, sort=FALSE)
 # From the dataset it is observed that in case of month March 2021, the complaints registered for first 3 days (79 complaints) are reflected. Thus, from the multiple regression model, it can be predicted that the number of complaints registered in the month of March 2021 might be close to 579.45
 
 
-*Instructions: Complete this assignment individually and submit online to the LEARN Dropbox as a ***_PDF (max 2 pages)_***. Also upload any source files, for example, and any .R or .Rmd files that you used. If you discussed problems with other students, please describe the nature of that discussion (e.g., on Team, in a study group). Remember, you can discuss approaches to problems with other people, but ***_the work you submit must be your own._**
 
-*Learning Objectives: In this assignment, you will perform a time series analysis. You will construct a model using the techniques found in class, or elsewhere. Finally, you will need to assess and describe the accuracy of your model. *
-
-
-**For your report**, include the following sections:
-
- 1. Problem statement and data used: You are back to your day job as a data analyst at Bank of America and would like to know how many potential complaints you would get from consumers in 2022. You've answered this question before, but this time you have more tools at your disposal. You know that there is a public source for complaint data: https://www.consumerfinance.gov/data-research/consumer-complaints/, and once again plan to use this to answer your question. 
- 2. Planning: Plan your analysis based on the problem statement. Include data wrangling, assumption tests, and any other analyses you may need to conduct.
- 3. Analysis: Conduct a time series analysis, along with any appropriate assumption and accuracy checks. If you do not have sufficient data to answer the question, answer a related question that will be useful to your manager.
- 4. Conclusion: Write up your analyses in a report to your manager (who has not taken MSCI 718, and does not understand statistics) and explain your conclusions.
-
-
- **Grading Criteria**
- You will be graded against the same rubric that was used for pair assignments 1 and 2. We will be looking for a number of things:
- 
- 1. Data selection: How you chose data and your problem statement. We will consider how your problem statement fits both the data, and the method (time series analysis) that you need to apply
- 2. Process and clarity of thought: Did you clearly apply a step by step process? Why did you chose the steps you did? Did you miss out on anything? Some examples would be ensuring you wrangled your data appropriately, checked the data against any assumptions required for the analysis, and did not do any work that was not required for this specific test.
- 3. Presentation: Use bulltets, subtitles, and the APA style for your report. Use simple language, do not use complicated words unless they help you describe a complex idea. Use graphs judiciously. Show your work - if you do not include something in the main report, the teaching staff will not grade it.
