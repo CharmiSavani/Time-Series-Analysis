@@ -1,0 +1,325 @@
+---
+title: "Individual Assignment 6"
+author: "MSCI 718"
+output: pdf_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(psych)
+library(ggiraph)
+library(ggiraphExtra)
+library(car)
+library(tidyverse)
+library(knitr)    # For knitting document and include_graphics function
+library(gridExtra) # For including grids of plots
+library(lubridate)
+library(tseries)   # For time series
+library(forecast)
+```
+
+```{r}
+bank<-read.csv("complaints_boa.csv")    # reading the dataset.
+str(bank)
+
+```
+# There are 99215 observations and 18 variables in this dataset which reflects total consumer complaints registered at Bank of America from December 2011 to March 2021.
+
+```{r}
+summary(bank)
+```
+
+```{r}
+a<- is.na(bank) # To check the null values
+sum(a)
+```
+# The sum comes out to be zero which means that there are no null values in this dataset. Thus, this dataset is tidy and can be used for further Exploratory Data Analysis.
+
+```{r}
+ggplot(bank, aes(x = (..count..)/sum(..count..)*100)) +  
+  geom_bar(aes(y = Product))  +
+        labs (x="percentage", y = "Products")
+```
+
+# It can be visualise from the above ggplot that maximum number of complaints are registered under the subject "mortgage".
+
+```{r}
+table(bank$Product)
+```
+
+# There are in total 44985 consumer complaints registered under the subject "mortgage" at Bank of America. Also, least number of complaints (14) are registered under "payday loan".
+
+```{r}
+	chardates <- as.character(bank$Date.received) #convert date to character
+	chardates <- gsub("/", "-", chardates) #change all records to same format
+	z <- as.Date(chardates,"%m-%d-%Y") #convert to date format
+	bank$ComplaintYear <- format(z, "%Y") #extract year from date
+	bank$ComplaintMonth <- format(z,"%m") #extract month from date
+	bank$ComplaintDay <- format(z,"%d") #extract day from date
+
+```
+
+```{r}
+bank <- bank[c('Date.received', 'Product')]
+```
+
+# The dataset is filtered with 99215 observations and 2 variables i.e. "Date received" and "Product".
+
+```{r}
+dates <- "Date.received"
+bank[, dates] = lapply(dates, function(x) as.Date(bank[,x],'%m/%d/%Y'))
+sapply(bank, class)
+```
+
+
+```{r}
+bank$year  <- lubridate::year(bank$Date.received)
+bank$month <- lubridate::month(bank$Date.received) 
+bank$day   <- lubridate::day(bank$Date.received)
+bank$Date.received <- NULL
+```
+
+```{r}
+monthly <- bank <- bank %>% group_by(year, month)
+per.month <- monthly %>% dplyr::summarize(num_complaint = n())
+tail(per.month, n=1)
+```
+
+```{r}
+head(per.month,n=1)
+```
+
+```{r}
+per.month$Date <- paste(per.month$year, per.month$month,sep = "-")
+per.month <- per.month[c("Date", "num_complaint")]
+```
+
+# Time series function is used to bifercate total complaints from year 2011 to 2021 (uptil March) month wise.
+
+```{r}
+complaints_total <- ts((per.month$num_complaint),start = c(2011,12), end = c(2021, 3), frequency = 12)
+start(complaints_total)
+```
+
+```{r}
+end(complaints_total)
+```
+
+```{r}
+class(complaints_total)
+```
+
+```{r}
+complaints_total
+```
+
+# The above time series reflects the complaints registered from 2011 (from December) to 2021 (uptil March) at Bank of America month wise.
+ 
+
+```{r , echo = TRUE}
+autoplot(complaints_total) +
+  ggtitle("Data of total complaints registered at Bank of America between 2011-2021") +
+  xlab("Year") +
+  ylab("Total Complaints")
+
+```
+
+# From the graph above, it can be visualise that the total consumer complaints shows an increasing trend from year 2012 to 2012 mid year. After mid year 2012 to 2013, the complaints start to decrease. From 2013 to 2014, the data of total omplaints shows a huge spike which means that the complaints were increased at the starting of 2013 and then decreased by the end of year 2014. From year 2014 to 2020, the total complaints registered yearly remains between 1000 to 500. After 2020, the data shows a sudden decreasing spike indicating that the number of complaints registered in year 2021 (uptil March) is very less. 
+
+# To understand the seasonal fluctuation variations, let us see the below graph showing data of first 3 years (2012-2015).
+
+```{r}
+autoplot(ts(complaints_total,start=2,end=37))
+
+```
+
+# It can be observed that the seasonal trend variation is decreasing in size over time of first 3 years (2012 to 2015) and seasonal fluctuations depend on the level of time series. Thus, a multiplicative decomposition method is best fitted for the model.
+
+```{r out.width="100%"}
+# To understand these trends in a more better way, decomposition of data is carried out.
+complaints = decompose(complaints_total, "multiplicative")
+complaints
+```
+
+```{r out.width="80%"}
+# plot(as.ts(complaints$seasonal))
+# plot(as.ts(complaints$trend))
+# plot(as.ts(complaints$random))
+plot(complaints)
+
+```
+
+
+```{r}
+library(xts)
+consumer_final<-as.xts(complaints_total)
+head(consumer_final)
+```
+
+```{r}
+write.csv(consumer_final,file="export_consumer_complaints.csv",sep = ",")
+getwd()
+```
+
+```{r}
+bank1<-read.csv("csv.1.csv")
+head(bank1)
+```
+
+# Assumptions of linear regression:
+
+1. The predictor variables "year" and "Month" are categorical and outcome variable "Total_complaints" is quantitative, continuous and unbounded. Thus, 1st assumption is fulfilled.
+
+2. Non-zero variance.
+
+```{r}
+var(bank1$Year)
+var(bank1$Month)
+var(bank1$Total_complaints)
+```
+# The 2nd assumption is fulfilled as all 3 variables have non-zero variances.
+
+3. There is no perfect multicollinearity between predictor variables.
+
+```{r}
+corr<-cor.test(bank1$Year,bank1$Month)
+corr
+```
+
+# The correlation between predictor variables Month and Year is -0.08870047 which is not a significant correlation. Thus, it can be said that there is no perfect collinearity between predictor variables Year and Month.
+
+4. Predictors are uncorrelated with external variables. Maybe - this could be a problem, but mostly for interpretation and validity of the predicted values. So for now, it is assume that there aren't any external variables.
+
+5. Visualization in ggplot plot below shows a linear relationship.
+
+```{r}
+plot(Total_complaints ~ Year, data=bank1)
+```
+
+```{r}
+plot(Total_complaints ~ Month, data=bank1)
+```
+
+#Thus, all assumptions required to carry out linear regression are satisfied.
+
+# Computing the regression model for prediction.
+
+```{r}
+bank.model2 <- lm(Total_complaints ~  Month + Year, data=bank1)
+bank.model2
+```
+
+# The formula of multiple linear regression is: B0 + B1*X1 + B2*X2; where B0 is the intercept, B1 and B2 are coefficients of predictor variables X1 and X2 respectively.
+# The coefficient for predictor variables are Month: -16.97 and year: -74.24. Thus, B0 = 150675.34, B1 = -16.97 for X1 = Month and B2 = -74.24 for X2 = Year.
+
+```{r}
+summary(bank.model2)
+```
+
+# It can be observed that the residual Standard Error (RSE) is 269.9 on 109 df. The p-value for Month is 0.0218* which is significant at 95% confidence intervals. Also, p-value for Year is 3.22e-12*** which is significant at 100% confidence intervals. The p-value for multiple regression model is good enough to consider this model as best suited for this problem statement.
+
+```{r}
+confint(bank.model2)
+```
+# The 95% confidence intervals for Month are -31.43366 to -2.514839.
+# The 95% confidence intervals for year are  -93.00711 to -55.478738.
+
+```{r}
+ggPredict(bank.model2, se=TRUE,colorAsFactor = TRUE)  
+```
+
+# From the above plot, it can be predicted that total number of consumer complaints registered at BOA are decreasing from year 2010 to 2025. Thus, it can be further predicted that the total number of consumer complaints registered in year 2022 might be less compared to the past years.
+# This can be justified using linear regression model.
+
+```{r}
+bank.model2$coefficients
+```
+
+# The coefficients for Month and Year are: B1= -16.97425 and B2= -74.24293 with an intercept of B0= 150675.33645. 
+
+# Now, predicting the total number of complaints registered in year 2022 at BOA.
+
+```{r}
+newValues<-data.frame(Month=c(1,2,3,4,5,6,7,8,9,10,11,12),Year=c(2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021))
+complaints_2021<-predict.lm(bank.model2,newdata = newValues)
+```
+```{r}
+Total_complaints_2021<- cbind(complaints_2021)
+Total_complaints_2021
+```
+
+```{r}
+# Total complaints predicted at BOA in year 2021 are:
+Total_complaints_2021<-sum(Total_complaints_2021)
+Total_complaints_2021
+```
+# From the dataset it is observed that in case of month March 2021, the complaints registered for first 3 days (79 complaints) are reflected. Thus, from the multiple regression model, it can be predicted that the number of complaints registered in the month of March 2021 might be close to 579.45.
+
+
+
+
+# Now, predicting the total number of complaints registered in year 2022 at BOA.
+
+```{r}
+newValues_1<-data.frame(Month=c(1,2,3,4,5,6,7,8,9,10,11,12),Year=c(2022,2022,2022,2022,2022,2022,2022,2022,2022,2022,2022,2022))
+complaints_2022<-predict.lm(bank.model2,newdata = newValues_1)
+```
+```{r}
+Total_complaints_2022<- cbind(complaints_2022)
+Total_complaints_2022
+```
+
+```{r}
+# Total complaints predicted at BOA in year 2022 are:
+Total_complaints_2022<-sum(Total_complaints_2022)
+Total_complaints_2022
+```
+
+# Thus, it can be interpreted from the above analysis that the total consumer complaints registered in 2022 at Bank Of America are 5349.685 rounding of gives the value ~5350.
+# Also, as predicted from the ggpPredict graph, the total complaints registered in year 2022 is less than the total complaints registered in year 2021 i.e. 6240.6.
+
+```{r}
+bank.model2$residuals
+```
+
+```{r}
+durbinWatsonTest(bank.model2)
+```
+
+```{r echo=FALSE}
+plot(bank.model2)
+```
+
+```{r}
+cooks.distance(bank.model2, parameters=0, sort=FALSE)
+```
+# Conclusion:
+
+# Thus, it can be concluded multiple linear regression is the best fitted model for this problem statement. 
+# The null hypothesis for multiple regression model is rejected as the slope between predictor variables Year, Month and outcome variable Total_complaints is not equal to zero.
+# Thus, it can be interpreted from the above analysis that the total consumer complaints registered in 2022 at Bank Of America are 5349.685 rounding of gives the value ~5350.
+# From the dataset it is observed that in case of month March 2021, the complaints registered for first 3 days (79 complaints) are reflected. Thus, from the multiple regression model, it can be predicted that the number of complaints registered in the month of March 2021 might be close to 579.45
+
+
+*Instructions: Complete this assignment individually and submit online to the LEARN Dropbox as a ***_PDF (max 2 pages)_***. Also upload any source files, for example, and any .R or .Rmd files that you used. If you discussed problems with other students, please describe the nature of that discussion (e.g., on Team, in a study group). Remember, you can discuss approaches to problems with other people, but ***_the work you submit must be your own._**
+
+*Learning Objectives: In this assignment, you will perform a time series analysis. You will construct a model using the techniques found in class, or elsewhere. Finally, you will need to assess and describe the accuracy of your model. *
+
+
+**For your report**, include the following sections:
+
+ 1. Problem statement and data used: You are back to your day job as a data analyst at Bank of America and would like to know how many potential complaints you would get from consumers in 2022. You've answered this question before, but this time you have more tools at your disposal. You know that there is a public source for complaint data: https://www.consumerfinance.gov/data-research/consumer-complaints/, and once again plan to use this to answer your question. 
+ 2. Planning: Plan your analysis based on the problem statement. Include data wrangling, assumption tests, and any other analyses you may need to conduct.
+ 3. Analysis: Conduct a time series analysis, along with any appropriate assumption and accuracy checks. If you do not have sufficient data to answer the question, answer a related question that will be useful to your manager.
+ 4. Conclusion: Write up your analyses in a report to your manager (who has not taken MSCI 718, and does not understand statistics) and explain your conclusions.
+
+
+ **Grading Criteria**
+ You will be graded against the same rubric that was used for pair assignments 1 and 2. We will be looking for a number of things:
+ 
+ 1. Data selection: How you chose data and your problem statement. We will consider how your problem statement fits both the data, and the method (time series analysis) that you need to apply
+ 2. Process and clarity of thought: Did you clearly apply a step by step process? Why did you chose the steps you did? Did you miss out on anything? Some examples would be ensuring you wrangled your data appropriately, checked the data against any assumptions required for the analysis, and did not do any work that was not required for this specific test.
+ 3. Presentation: Use bulltets, subtitles, and the APA style for your report. Use simple language, do not use complicated words unless they help you describe a complex idea. Use graphs judiciously. Show your work - if you do not include something in the main report, the teaching staff will not grade it.
